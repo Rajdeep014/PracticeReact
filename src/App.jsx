@@ -52,6 +52,7 @@ const App = () => {
   const deleteTask = (index) => {
     const updatedArray = dataArray.filter((e, i) => i !== index);
     setDataArray(updatedArray);
+    console.log("delete successfull");
   };
 
   const updateTask = (index) => {
@@ -103,7 +104,12 @@ const App = () => {
         {dataArray.map((e, i) => {
           const isChecked = checkedTasks[i];
           return (
-            <div key={i} className={`flex flex-col m-10 ${isChecked ? "line-through" : ""}`}>
+            <div
+              key={i}
+              className={`flex flex-col m-10 ${
+                isChecked ? "line-through" : ""
+              }`}
+            >
               <div>
                 <input
                   type="checkbox"
