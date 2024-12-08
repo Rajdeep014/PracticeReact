@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const App = () => {
   const [newtask, setNewTask] = useState("");
@@ -8,40 +8,41 @@ const App = () => {
   const [dataArray, setDataArray] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
 
-  const saveToCokkie = (key, array) => {
-    document.cookie = `${key}=${JSON.stringify(array)} path=/; max-age=86400`;
+  // Save tasks to cookie
+  const saveToCookie = (key, array) => {
+    document.cookie = `${key}=${JSON.stringify(array)}; path=/; max-age=86400`;
   };
 
+  // Get tasks from cookie
   const getFromCookie = (key) => {
     const cookies = document.cookie.split("; ");
     const cookie = cookies.find((item) => item.startsWith(`${key}=`));
     return cookie ? JSON.parse(cookie.split("=")[1]) : [];
   };
 
+  // Function to handle input changes
   const onChangeFunc = (func) => (e) => func(e.target.value);
 
+  // Submit form to add or update task
   const submiHandler = (e) => {
     e.preventDefault();
     const tasks = { newtask, title, dob };
-
+    let updatedArray;
     if (editIndex !== null) {
-      // If editIndex is set, we are updating a task
-      const updatedArray = [...dataArray];
-      updatedArray[editIndex] = tasks;
-      setDataArray(updatedArray);
-      setEditIndex(null); // Reset editIndex after update
+      updatedArray = [...dataArray];
+      updatedArray[editIndex] = tasks; // Update existing task
     } else {
-      // If no task is being edited, we add a new task
-      const updatedArray = [...dataArray, tasks];
-      setDataArray(updatedArray);
+      updatedArray = [...dataArray, tasks]; // Add new task
     }
-
-    // saveToCokkie("tasks", updatedArray);
+    setDataArray(updatedArray);
+    saveToCookie("tasks", updatedArray); // Save updated tasks to cookie
     setNewTask("");
     setTitle("");
     setDob("");
+    setEditIndex(null); // Reset edit index after submission
   };
 
+  // Handle checkbox toggle
   const handleCheckboxChange = (index) => {
     setCheckedTasks((prev) => ({
       ...prev,
@@ -49,11 +50,20 @@ const App = () => {
     }));
   };
 
+  // Load tasks from cookie on component mount
+  useEffect(() => {
+    const savedTasks = getFromCookie("tasks");
+    setDataArray(savedTasks);
+  }, []);
+
+  // Delete task
   const deleteTask = (index) => {
     const updatedArray = dataArray.filter((e, i) => i !== index);
     setDataArray(updatedArray);
+    saveToCookie("tasks", updatedArray); // Save updated tasks to cookie
   };
 
+  // Edit task
   const updateTask = (index) => {
     const task = dataArray[index];
     setTitle(task.title);
@@ -63,83 +73,92 @@ const App = () => {
   };
 
   return (
-    <>
-      <div className="w-full flex-col h-[20rem] m-10  order-2px border-black">
-        <h1 className="text-center text-5xl uppercase bg-slate-700 text-yellow-500">
-          New Task
-        </h1>
-        <form
-          className="flex-col flex justify-center align items-center mt-10 m-2"
-          onSubmit={submiHandler}
-        >
-          <label>Title</label>
+    <div className="max-w-3xl mx-auto p-5 bg-gray-100 rounded-lg shadow-lg">
+      <h1 className="text-center text-3xl font-semibold text-gray-700 mb-5">
+        {editIndex !== null ? "Update Task" : "New Task"}
+      </h1>
+      <form className="space-y-4" onSubmit={submiHandler}>
+        <div>
+          <label className="block text-lg font-medium text-gray-600">Title</label>
           <input
+            type="text"
             value={title}
             onChange={onChangeFunc(setTitle)}
-            placeholder="Enter Title"
-            type="text"
+            placeholder="Enter Task Title"
+            className="w-full p-3 mt-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
-          <label>Description</label>
+        </div>
+
+        <div>
+          <label className="block text-lg font-medium text-gray-600">Description</label>
           <input
+            type="text"
             value={newtask}
             onChange={onChangeFunc(setNewTask)}
-            placeholder="Enter Description"
-            type="text"
+            placeholder="Enter Task Description"
+            className="w-full p-3 mt-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
-          <label>Dob</label>
+        </div>
+
+        <div>
+          <label className="block text-lg font-medium text-gray-600">Date of Birth</label>
           <input
+            type="date"
             value={dob}
             onChange={onChangeFunc(setDob)}
-            placeholder="Enter Date of Birth"
-            type="date"
+            className="w-full p-3 mt-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
-          <button className="py-2 px-6 bg-red-600 hover:scale-50 text-2xl uppercase font-bold text-red hover:text-white hover:bg-red-200 rounded mt-10 transition ease-in-out duration-200">
-            {editIndex !== null ? "Update" : "Add"} {/* Change button text */}
-          </button>
-        </form>
-      </div>
+        </div>
 
-      <div className="w-100% h-screen rounded-lg bg-gray-300 shadow-2xl m-20">
+        <button
+          type="submit"
+          className="w-full py-3 mt-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition"
+        >
+          {editIndex !== null ? "Update Task" : "Add Task"}
+        </button>
+      </form>
+
+      {/* Task List */}
+      <div className="mt-8 space-y-4">
         {dataArray.map((e, i) => {
           const isChecked = checkedTasks[i];
           return (
-            <div key={i} className={`flex flex-col m-10 ${isChecked ? "line-through" : ""}`}>
+            <div
+              key={i}
+              className={`flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm ${
+                isChecked ? "line-through text-gray-500" : ""
+              }`}
+            >
               <div>
                 <input
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => handleCheckboxChange(i)}
+                  className="mr-4"
                 />
-                <h1>
-                  <span className="mr-10">Name :</span>
-                  {e.title}
-                </h1>
-                <h1>
-                  <span className="mr-10">Description :</span>
-                  {e.newtask}
-                </h1>
-                <h1>
-                  <span className="mr-10">Date of birth :</span>
-                  {e.dob}
-                </h1>
-                <button
-                  onClick={() => deleteTask(i)} // Fixing this from `onChange` to `onClick`
-                  className="mr-10 shadow-2xl bg-red-600 rounded px-6 py-2"
-                >
-                  Delete
-                </button>
+                <h2 className="text-lg font-medium">{e.title}</h2>
+                <p className="text-gray-600">{e.newtask}</p>
+                <p className="text-gray-500">Date of Birth: {e.dob}</p>
+              </div>
+              <div className="flex space-x-3">
                 <button
                   onClick={() => updateTask(i)}
-                  className="bg-blue-600 shadow-2xl rounded px-6 py-2"
+                  className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600"
                 >
-                  Update
+                  Edit
+                </button>
+                <button
+                  onClick={() => deleteTask(i)}
+                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+                >
+                  Delete
                 </button>
               </div>
             </div>
           );
         })}
       </div>
-    </>
+    </div>
   );
 };
 
